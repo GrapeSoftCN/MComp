@@ -123,7 +123,7 @@ public class MCompany {
 	@SuppressWarnings("unchecked")
 	private String checkParam(String info) {
 		String temp = "";
-		if (StringHelper.InvaildString(info)) {
+		if (!StringHelper.InvaildString(info)) {
 			return rMsg.netMSG(1, "参数错误");
 		}
 		JSONObject object = JSONObject.toJSON(info);
@@ -136,7 +136,7 @@ public class MCompany {
 			}
 			if (object.containsKey("companyMob")) {
 				temp = object.getString("companyMob");
-				if (!checkHelper.checkEmail(temp)) {
+				if (!checkHelper.checkMobileNumber(temp)) {
 					return rMsg.netMSG(3, "手机号格式错误");
 				}
 			}
