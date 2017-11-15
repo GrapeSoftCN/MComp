@@ -6,6 +6,7 @@ import org.json.simple.JSONObject;
 
 import JGrapeSystem.rMsg;
 import apps.appsProxy;
+import authority.plvDef.plvType;
 import check.checkHelper;
 import interfaceModel.GrapeDBSpecField;
 import interfaceModel.GrapeTreeDBModel;
@@ -24,6 +25,7 @@ public class MCompany {
 	private session se;
 	private JSONObject userInfo = null;
 	private String currentWeb = null;
+	private Integer userType = null;
 
 	public MCompany() {
 
@@ -32,11 +34,13 @@ public class MCompany {
 		gDbSpecField.importDescription(appsProxy.tableConfig("MCompany"));
 		MCompany.descriptionModel(gDbSpecField);
 		MCompany.bindApp();
-
+		MCompany.enableCheck();//开启权限检查
+		
 		se = new session();
 		userInfo = se.getDatas();
 		if (userInfo != null && userInfo.size() != 0) {
 			currentWeb = userInfo.getString("currentWeb"); // 当前用户所属网站id
+			userType =userInfo.getInt("userType");//当前用户身份
 		}
 	}
 
@@ -54,9 +58,17 @@ public class MCompany {
 			return info;
 		}
 		JSONObject object = JSONObject.toJSON(info);
+		JSONObject rMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 100);//设置默认查询权限
+    	JSONObject uMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 200);
+    	JSONObject dMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 300);
+    	object.put("rMode", rMode.toJSONString()); //添加默认查看权限
+    	object.put("uMode", uMode.toJSONString()); //添加默认修改权限
+    	object.put("dMode", dMode.toJSONString()); //添加默认删除权限
 		if (object != null && object.size() > 0) {
 			info = (String) MCompany.data(object).insertEx();
-			result = info != null ? rMsg.netMSG(0, "新增成功") : result;
+			if(info != null){
+				result = rMsg.netMSG(0, "新增成功");
+			}
 		}
 		return result;
 	}
@@ -69,7 +81,7 @@ public class MCompany {
 	 * @return
 	 */
 	public String updateComp(String cid, String info) {
-		int code = 99;
+		boolean code = false;
 		String result = rMsg.netMSG(100, "修改失败");
 		info = checkParam(info);
 		if (info.contains("errorcode")) {
@@ -77,8 +89,8 @@ public class MCompany {
 		}
 		JSONObject object = JSONObject.toJSON(info);
 		if (ObjectId.isValid(cid) && object != null && object.size() > 0) {
-			code = MCompany.eq("_id", cid).data(object).update() != null ? 0 : 99;
-			result = code == 0 ? rMsg.netMSG(0, "修改成功") : result;
+			code = MCompany.eq("_id", cid).data(object).updateEx();
+				result = code ? rMsg.netMSG(0, "修改成功") : result;
 		}
 		return result;
 	}
